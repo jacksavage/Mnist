@@ -5,9 +5,15 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 
+// load our data
 var baseUrl = @"http://yann.lecun.com/exdb/mnist/";
 var trainData = ReadData(baseUrl, @"train-images-idx3-ubyte.gz", @"train-labels-idx1-ubyte.gz");
 var testData = ReadData(baseUrl, @"t10k-images-idx3-ubyte.gz", @"t10k-labels-idx1-ubyte.gz");
+
+// train a network
+var pattern = trainData.First();
+var layerSizes = new int[] { pattern.x.Length, 6, pattern.y.Length };
+var network = InitializeNetwork(layerSizes);
 
 System.Diagnostics.Debugger.Break();
 
@@ -73,4 +79,24 @@ static IEnumerable<double[]> ReadLabels(BinaryReader reader)
             .Select(i => b == i ? 1.0 : 0.0)
             .ToArray();
     }
+}
+
+static (double[][][] weights, double[][] biases) InitializeNetwork(int[] layerSizes)
+{
+    // instantiate a random number generator
+    var rand = new Random((int)(DateTime.Now.Ticks % int.MaxValue));
+   
+    double[] vector(int m) => Enumerable.Range(0, m).Select(i => rand.NextDouble()).ToArray();
+    double[][] matrix(int m, int n) => Enumerable.Range(0, n).Select(i => vector(m)).ToArray();
+    
+    // generate the network weights
+    var weights =
+        Enumerable.Range(0, layerSizes.Length - 1)
+        .Select(i => matrix(m: layerSizes[i], n: layerSizes[i + 1]))
+        .ToArray();
+
+    // generate the network biases
+    var biases = layerSizes.Skip(1).Select(vector).ToArray();
+
+    return (weights, biases);
 }
