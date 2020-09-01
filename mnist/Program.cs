@@ -111,3 +111,30 @@ static void Shuffle<T>(Random rand, T[] data)
         data[k] = d;
     }
 }
+
+static IEnumerable<T> ArrayRange<T>(T[] source, int start, int end)
+{
+    for (int i = start; i <= end; i++) yield return source[i];
+}
+
+static void Train(Random rand, (double[] x, double[] y)[] data, int numEpochs, double learnRate, int batchSize)
+{
+    // for each epoch
+    for (var epoch = 1; epoch <= numEpochs; epoch++)
+    {
+        // shuffle the data
+        Shuffle(rand, data);
+
+        // update the weights with each batch
+        for (var i = 0; i < data.Length; i += batchSize)
+        {
+            var batch = ArrayRange(data, i, i + batchSize - 1);
+            TrainBatch(batch, learnRate, batchSize);
+        }
+    }
+}
+
+static void TrainBatch(IEnumerable<(double[] x, double[] y)> data, double learnRate, int batchSize)
+{
+
+}
