@@ -7,16 +7,44 @@ using System.Net;
 
 // load our data
 var baseUrl = @"http://yann.lecun.com/exdb/mnist/";
-var trainData = ReadData(baseUrl, @"train-images-idx3-ubyte.gz", @"train-labels-idx1-ubyte.gz");
-var testData = ReadData(baseUrl, @"t10k-images-idx3-ubyte.gz", @"t10k-labels-idx1-ubyte.gz");
+var trainData =
+    ReadData(
+        baseUrl, 
+        imageFile: @"train-images-idx3-ubyte.gz",
+        labelFile: @"train-labels-idx1-ubyte.gz"
+    ).ToArray();
+var testData = 
+    ReadData(
+        baseUrl, 
+        imageFile: @"t10k-images-idx3-ubyte.gz",
+        labelFile: @"t10k-labels-idx1-ubyte.gz"
+    ).ToArray();
 
 // instantiate a random number generator
 var rand = new Random((int)(DateTime.Now.Ticks % int.MaxValue));
 
-// train a network
-var pattern = trainData.First();
-var layerSizes = new int[] { pattern.x.Length, 6, pattern.y.Length };
-var network = InitializeNetwork(rand, layerSizes);
+// create a network
+var (x1, y1) = trainData.First();
+var layerSizes = new int[] { x1.Length, 6, y1.Length };
+var (weights, biases) = InitializeNetwork(rand, layerSizes);
+
+// train the network, reporting performance for each epoch
+var epochInfo =
+    Train(
+        weights,
+        biases,
+        trainData,
+        testData,
+        rand,
+        numEpochs: 100,
+        learnRate: 0.1,
+        batchSize: 1000
+    );
+
+// print the performance on each epoch
+foreach (var (epoch, numCorrect) in epochInfo)
+    Console.WriteLine($"epoch {epoch} : {numCorrect} / {testData.Length}");
+Console.WriteLine("done training");
 
 System.Diagnostics.Debugger.Break();
 
@@ -117,24 +145,44 @@ static IEnumerable<T> ArrayRange<T>(T[] source, int start, int end)
     for (int i = start; i <= end; i++) yield return source[i];
 }
 
-static void Train(Random rand, (double[] x, double[] y)[] data, int numEpochs, double learnRate, int batchSize)
-{
+static IEnumerable<(int epoch, int numCorrect)> Train(
+    double[][][] weights, double[][] biases,
+    (double[] x, double[] y)[] trainData, (double[] x, double[] y)[] testData,
+    Random rand,
+    int numEpochs, double learnRate, int batchSize
+) {
     // for each epoch
-    for (var epoch = 1; epoch <= numEpochs; epoch++)
+    for (var epoch = 0; epoch < numEpochs; epoch++)
     {
         // shuffle the data
-        Shuffle(rand, data);
+        Shuffle(rand, trainData);
 
-        // update the weights with each batch
-        for (var i = 0; i < data.Length; i += batchSize)
+        // update the weights and biases with each batch
+        for (var i = 0; i < trainData.Length; i += batchSize)
         {
-            var batch = ArrayRange(data, i, i + batchSize - 1);
-            TrainBatch(batch, learnRate, batchSize);
+            // select the next set of patterns
+            // use them to make one adjustment to the weights and biases
+            var batch = ArrayRange(trainData, i, i + batchSize - 1);
+            TrainBatch(weights, biases, batch, learnRate, batchSize);
         }
+
+        // determine the number of correctly predicted patterns
+        var numCorrect = Evaluate(weights, biases, testData);
+        yield return (epoch, numCorrect);
     }
 }
 
-static void TrainBatch(IEnumerable<(double[] x, double[] y)> data, double learnRate, int batchSize)
-{
+static void TrainBatch(
+    double[][][] weights, double[][] biases,
+    IEnumerable<(double[] x, double[] y)> data,
+    double learnRate, int batchSize
+) {
+
+}
+
+static int Evaluate(
+    double[][][] weights, double[][] biases,
+    IEnumerable<(double[] x, double[] y)> data
+) {
 
 }
