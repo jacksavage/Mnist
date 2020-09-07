@@ -24,15 +24,14 @@ var testData =
 var rand = new Random((int)(DateTime.Now.Ticks % int.MaxValue));
 
 // create a network
-var (x1, y1) = trainData.First();
-var layerSizes = new int[] { x1.Length, 6, y1.Length };
-var (weights, biases) = InitializeNetwork(rand, layerSizes);
+var (x0, y0) = trainData.First();
+var layerSizes = new int[] { x0.Length, 6, y0.Length };
+var network = InitializeNetwork(rand, layerSizes);
 
 // train the network, reporting performance for each epoch
 var epochInfo =
     Train(
-        weights,
-        biases,
+        network,
         trainData,
         testData,
         rand,
@@ -112,21 +111,21 @@ static IEnumerable<double[]> ReadLabels(BinaryReader reader)
     }
 }
 
-static (double[][][] weights, double[][] biases) InitializeNetwork(Random rand, int[] layerSizes)
+static (double[][] weights, double[] biases)[] InitializeNetwork(Random rand, int[] layerSizes)
 {
     double[] vector(int m) => Enumerable.Range(0, m).Select(i => rand.NextDouble()).ToArray();
     double[][] matrix(int m, int n) => Enumerable.Range(0, n).Select(i => vector(m)).ToArray();
     
-    // generate the network weights
-    var weights =
+    // generate the network weights and biases
+    var network =
         Enumerable.Range(0, layerSizes.Length - 1)
-        .Select(i => matrix(m: layerSizes[i], n: layerSizes[i + 1]))
-        .ToArray();
+        .Select(i => new { inSize = layerSizes[i], outSize = layerSizes[i + 1] })
+        .Select(sizes => (
+            weights: matrix(m: sizes.inSize, n: sizes.outSize),
+            biases: vector(m: sizes.outSize) 
+        )).ToArray();
 
-    // generate the network biases
-    var biases = layerSizes.Skip(1).Select(vector).ToArray();
-
-    return (weights, biases);
+    return network;
 }
 
 static void Shuffle<T>(Random rand, T[] data)
@@ -146,7 +145,7 @@ static IEnumerable<T> ArrayRange<T>(T[] source, int start, int end)
 }
 
 static IEnumerable<(int epoch, int numCorrect)> Train(
-    double[][][] weights, double[][] biases,
+    (double[][] weights, double[] biases)[] network,
     (double[] x, double[] y)[] trainData, (double[] x, double[] y)[] testData,
     Random rand,
     int numEpochs, double learnRate, int batchSize
@@ -163,17 +162,17 @@ static IEnumerable<(int epoch, int numCorrect)> Train(
             // select the next set of patterns
             // use them to make one adjustment to the weights and biases
             var batch = ArrayRange(trainData, i, i + batchSize - 1);
-            TrainBatch(weights, biases, batch, learnRate, batchSize);
+            TrainBatch(network, batch, learnRate, batchSize);
         }
 
         // determine the number of correctly predicted patterns
-        var numCorrect = Evaluate(weights, biases, testData);
+        var numCorrect = Evaluate(network, testData);
         yield return (epoch, numCorrect);
     }
 }
 
 static void TrainBatch(
-    double[][][] weights, double[][] biases,
+    (double[][] weights, double[] biases)[] network,
     IEnumerable<(double[] x, double[] y)> data,
     double learnRate, int batchSize
 ) {
@@ -181,7 +180,7 @@ static void TrainBatch(
 }
 
 static int Evaluate(
-    double[][][] weights, double[][] biases,
+    (double[][] weights, double[] biases)[] network,
     IEnumerable<(double[] x, double[] y)> data
 ) {
 
