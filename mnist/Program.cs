@@ -181,7 +181,29 @@ static void TrainBatch(
 
 static int Evaluate(
     (double[][] weights, double[] biases)[] network,
-    IEnumerable<(double[] x, double[] y)> data
+    IEnumerable<(double[] x, double[] y)> patterns
 ) {
 
+    int indexOfMax(double[] items) => Enumerable.Range(1, items.Length - 1).Aggregate(0, (iMax, i) => items[i] > items[iMax] ? i : iMax);
+    bool isCorrect(double[] x, double[] y) => indexOfMax(Predict(network, x)) == indexOfMax(y);
+    return patterns.Count(pattern => isCorrect(pattern.x, pattern.y));
+}
+
+static double[] Predict((double[][] weights, double[] biases)[] network, double[] x)
+{
+    // find dot product of two vectors
+    double dot(double[] a, double[] b) => Enumerable.Zip(a, b, (aa, bb) => aa * bb).Sum();
+
+    // compute the output of one layer
+    // reorganize the weights and biases by neuron
+    // for each neuron comput its output
+    double[] evalLayer(double[] input, (double[][] weights, double[] biases) layer) =>
+        Enumerable.Zip(layer.weights, layer.biases, (weights, bias) => (weights, bias))
+        .Select(neuron => dot(input, neuron.weights) + neuron.bias)
+        .ToArray();
+
+
+    // step through each layer and compute its output
+    // final layer output is the network output
+    return network.Aggregate(seed: x, evalLayer);
 }
