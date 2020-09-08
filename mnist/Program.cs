@@ -131,6 +131,9 @@ static T[] Vector<T>(int M, Func<int, T> elementFunc) =>
 static T[][] Matrix<T>(int M, int N, Func<int, int, T> elementFunc) =>
     Enumerable.Range(0, N).Select(n => Vector(M, m => elementFunc(m, n))).ToArray();
 
+static double Dot(double[] a, double[] b) => 
+    Enumerable.Zip(a, b, (aa, bb) => aa * bb).Sum();
+
 static void Shuffle<T>(T[] patterns, Random rand)
 {
     for (var n = patterns.Length; n > 1; n--)
@@ -194,15 +197,12 @@ static int Evaluate(
 
 static double[] Predict((double[][] weights, double[] biases)[] network, double[] x)
 {
-    // find dot product of two vectors
-    double dot(double[] a, double[] b) => Enumerable.Zip(a, b, (aa, bb) => aa * bb).Sum();
-
     // compute the output of one layer
     // reorganize the weights and biases by neuron
     // for each neuron comput its output
     double[] evalLayer(double[] input, (double[][] weights, double[] biases) layer) =>
         Enumerable.Zip(layer.weights, layer.biases, (weights, bias) => (weights, bias))
-        .Select(neuron => dot(input, neuron.weights) + neuron.bias)
+        .Select(neuron => Dot(input, neuron.weights) + neuron.bias)
         .ToArray();
 
 
