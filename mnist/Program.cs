@@ -113,20 +113,23 @@ static IEnumerable<double[]> ReadLabels(BinaryReader reader)
 
 static (double[][] weights, double[] biases)[] InitializeNetwork(Random rand, int[] layerSizes)
 {
-    double[] vector(int m) => Enumerable.Range(0, m).Select(i => rand.NextDouble()).ToArray();
-    double[][] matrix(int m, int n) => Enumerable.Range(0, n).Select(i => vector(m)).ToArray();
-    
     // generate the network weights and biases
     var network =
         Enumerable.Range(0, layerSizes.Length - 1)
         .Select(i => new { inSize = layerSizes[i], outSize = layerSizes[i + 1] })
         .Select(sizes => (
-            weights: matrix(m: sizes.inSize, n: sizes.outSize),
-            biases: vector(m: sizes.outSize) 
+            weights: Matrix(M: sizes.inSize, N: sizes.outSize, (m, n) => rand.NextDouble()),
+            biases: Vector(M: sizes.outSize, m => rand.NextDouble()) 
         )).ToArray();
 
     return network;
 }
+
+static T[] Vector<T>(int M, Func<int, T> elementFunc) => 
+    Enumerable.Range(0, M).Select(elementFunc).ToArray();
+
+static T[][] Matrix<T>(int M, int N, Func<int, int, T> elementFunc) =>
+    Enumerable.Range(0, N).Select(n => Vector(M, m => elementFunc(m, n))).ToArray();
 
 static void Shuffle<T>(T[] patterns, Random rand)
 {
