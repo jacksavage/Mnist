@@ -33,5 +33,16 @@ namespace mnist
             (items[i], items[j]) = (items[j], items[i]);
 
         public static double Sigmoid(double x) => 1.0 / (1.0 + Math.Exp(-x));
+
+        public static TC[] ArrayZip<TA, TB, TC>(TA[] a, TB[] b, Func<TA, TB, TC> func)
+        {
+            if (a.Length != b.Length) return null;
+            var result = new TC[a.Length];
+
+            for (var i = 0; i < a.Length; i++)
+                result[i] = func(a[i], b[i]);
+
+            return result;
+        }
     }
 }
