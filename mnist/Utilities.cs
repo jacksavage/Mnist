@@ -44,5 +44,13 @@ namespace mnist
 
             return result;
         }
+
+        public static TB[] ArraySelect<TA, TB>(TA[] a, Func<TA, TB> func)
+        {
+            var result = new TB[a.Length];
+            for (var i = 0; i < a.Length; i++)
+                result[i] = func(a[i]);
+            return result;
+        }
     }
 }
