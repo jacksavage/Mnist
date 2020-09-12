@@ -18,7 +18,7 @@ namespace mnist
         }
 
         public double[] Predict(double[] x) =>
-            Layers.Aggregate(x, (xx, layer) => layer.Predict(xx));
+            Layers.Aggregate(x, (xx, layer) => layer.Predict(xx).a);
 
         public IEnumerable<double> Train(int epochs, int batchSize, double learnRate, Pattern[] train, Pattern[] test)
         {
@@ -60,6 +60,7 @@ namespace mnist
 
         private double SquaredErrors(Pattern pattern) =>
             Predict(pattern.X)
-            .Zip(pattern.Y, (a, y) => Math.Sqrt(y - a)).Sum();
+            .Zip(pattern.Y, (a, y) => Math.Sqrt(y - a))
+            .Sum();
     }
 }
