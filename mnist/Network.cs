@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static mnist.Utilities;
 
 namespace mnist
 {
@@ -52,7 +53,47 @@ namespace mnist
 
         private void TrainBatch(double learnRate, int batchSize, IEnumerable<Pattern> patterns)
         {
+            // accumulate cost gradient for every pattern in batch
+            var gradW = Layers.Select(L => ArrayFill(L.Neurons.Length, () => new double[L.SizeIn])).ToArray();
+            var gradB = Layers.Select(L => new double[L.Neurons.Length]).ToArray();
+            foreach (var pattern in patterns)
+                Backprop(pattern, gradW, gradB);
 
+            // todo update the weights and biases in the network by a factor of batch size and learning rate
+        }
+
+        private void Backprop(Pattern pattern, double[][][] gradW, double[][] gradB)
+        {
+            // forward pass, storing pre & post activation
+            var aL = pattern.X;
+            var a = new double[Layers.Length][];
+            var z = new double[Layers.Length][];
+            for (var i = 0; i < Layers.Length; i++)
+            {
+                var prediction = Layers[i].Predict(aL);
+                z[i] = prediction.z;
+                a[i] = prediction.a;
+            }
+
+            // find output error
+            // 'z' not needed for sigmoid prime bc it can be written as a function of 'a'
+            var L = Layers.Length - 1;
+            var costPrime = ArrayZip(a[L], pattern.Y, (aa, yy) => aa - yy);
+            var sigmoidPrime = ArraySelect(a[L], aa => aa * (1 - aa));
+            var delta = ArrayZip(costPrime, sigmoidPrime, (c, s) => c * s);
+
+            // for each neuron, accumulate this error in the gradient for the final layer
+            for (var neuronI = 0; neuronI < Layers[L].Neurons.Length; neuronI++)
+            {
+                // gradB = delta
+                gradB[L][neuronI] += delta[neuronI];
+                
+                // gradW = ain * dout
+                for (var weightI = 0; weightI < Layers[L].SizeIn; weightI++)
+                    gradW[L][neuronI][weightI] += delta[neuronI] * a[L - 1][weightI];
+            }
+
+            // todo find delta for every previous layer, then accumulate that error in the gradient as well
         }
 
         private double Cost(Pattern[] patterns) =>
