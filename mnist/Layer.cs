@@ -17,17 +17,19 @@ namespace mnist
             Activate = Sigmoid;
         }
 
-        public double[] Predict(double[] x)
+        public (double[] a, double[] z) Predict(double[] x)
         {
             var a = new double[Neurons.Length];
+            var z = new double[Neurons.Length];
 
+            
             for (var i = 0; i < Neurons.Length; i++)
             {
-                var z = Neurons[i].Predict(x);
-                a[i] = Activate(z);
+                z[i] = Neurons[i].Predict(x);
+                a[i] = Activate(z[i]);
             }
 
-            return a;
+            return (a, z);
         }
     }
 }
