@@ -7,6 +7,8 @@ namespace mnist
     {
         public Neuron[] Neurons { get; }
         public Func<double, double> Activate { get; }
+        
+        public int SizeIn { get; }
 
         public Layer(int sizeIn, int sizeOut)
         {
@@ -15,6 +17,8 @@ namespace mnist
             // todo paramaterize activation function?
             // maybe an enum lookup so so the network is serializable
             Activate = Sigmoid;
+
+            SizeIn = sizeIn;
         }
 
         public (double[] a, double[] z) Predict(double[] x)
